@@ -22,11 +22,11 @@ def huber_loss(y_true, y_pred, clip_value=1):
     return tf.where(condition, squared_loss, linear_loss)
 
 # Load the model architecture from JSON file
-with open("./final/models/DDQN_model.json", "r") as json_file:
+with open("./models/DDQN_model.json", "r") as json_file:
     model = model_from_json(json.load(json_file))
 
 # Load the model weights
-model.load_weights("./final/models/DDQN_model.weights.h5")
+model.load_weights("./models/DDQN_model.weights.h5")
 
 # Compile the model with the custom huber_loss function
 model.compile(loss=huber_loss, optimizer="sgd")
