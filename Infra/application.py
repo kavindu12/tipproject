@@ -7,9 +7,7 @@ from flask import Flask, request, jsonify
 import json
 import psycopg2  # Add this to interact with PostgreSQL
 from datetime import datetime
-
-
-
+from flask_cors import CORS, cross_origin
 
 # Register the custom huber_loss function
 @register_keras_serializable()
@@ -38,6 +36,10 @@ model.compile(loss=huber_loss, optimizer="sgd")
 
 # Initialize Flask app
 app = Flask(__name__)
+
+cors = CORS(app)
+
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 # Define a dictionary for label mapping (make sure this is loaded from your saved file)
 label_dict = {
