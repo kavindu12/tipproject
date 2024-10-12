@@ -79,6 +79,7 @@ def create_predictions_table():
 
 # Route for predictions
 @app.route('/predict', methods=['POST'])
+@cross_origin()
 def predict():
     try:
         # Get input data from request
@@ -118,11 +119,13 @@ def predict():
 
 # Flask route for checking server status
 @app.route('/status', methods=['GET'])
+@cross_origin()
 def status():
     return jsonify({"status": "Server is running"}), 200
 
 # Route to get all records from predictions table
 @app.route('/records', methods=['GET'])
+@cross_origin()
 def get_all_records():
     try:
         conn = get_db_connection()
