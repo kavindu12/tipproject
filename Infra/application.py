@@ -6,6 +6,8 @@ from keras.saving import register_keras_serializable
 from flask import Flask, request, jsonify
 import json
 import psycopg2  # Add this to interact with PostgreSQL
+from datetime import datetime
+
 
 
 
@@ -64,8 +66,9 @@ def create_predictions_table():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS predictions (
             id SERIAL PRIMARY KEY,
-            predicted_class INTEGER,
-            class_label VARCHAR(255)
+            filename VARCHAR(255),
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            predicted_class INTEGER
         )
     ''')
     conn.commit()
@@ -79,10 +82,16 @@ def predict():
         # Get input data from request
         data = request.json
         input_data = np.array(data['input']).reshape(1, -1)  # Reshape as per the model requirements
+
+        # Get the filename if provided, otherwise set it to None (which will be stored as NULL in the database)
+        filename = data.get('filename', None)
         
         # Predict using the loaded model
         prediction = model.predict(input_data)
         predicted_class = np.argmax(prediction, axis=1)
+
+        # Get the current timestamp
+        current_timestamp = datetime.now()
         
         # Prepare the response
         response = {
@@ -94,8 +103,8 @@ def predict():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO predictions (predicted_class, class_label) VALUES (%s, %s)",
-            (int(predicted_class[0]), label_dict[str(predicted_class[0])])
+            "INSERT INTO predictions (filename, timestamp, predicted_class) VALUES (%s, %s, %s)",
+            ((filename, current_timestamp, int(predicted_class[0]),))
         )
         conn.commit()
         cursor.close()
