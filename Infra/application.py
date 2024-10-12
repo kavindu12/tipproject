@@ -119,6 +119,34 @@ def predict():
 def status():
     return jsonify({"status": "Server is running"}), 200
 
+# Route to get all records from predictions table
+@app.route('/records', methods=['GET'])
+def get_all_records():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Query all records from predictions table
+        cursor.execute("SELECT * FROM predictions")
+        records = cursor.fetchall()
+
+        # Prepare the records for JSON response
+        results = []
+        for row in records:
+            results.append({
+                'id': row[0],
+                'filename': row[1],
+                'timestamp': row[2],
+                'predicted_class': row[3]
+            })
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(results), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 # Run the app
 if __name__ == '__main__':
     create_predictions_table()  # Ensure the table is created when the app starts
