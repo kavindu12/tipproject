@@ -5,6 +5,9 @@ from keras.models import model_from_json
 from keras.saving import register_keras_serializable
 from flask import Flask, request, jsonify
 import json
+import psycopg2  # Add this to interact with PostgreSQL
+
+
 
 # Register the custom huber_loss function
 @register_keras_serializable()
@@ -45,6 +48,30 @@ label_dict = {
     '6': 'Web attack'
 }
 
+# Database connection setup (you can load environment variables here if needed)
+def get_db_connection():
+    conn = psycopg2.connect(
+        host="db",  # the service name from docker-compose
+        database="mydatabase",
+        user="user",
+        password="password"
+    )
+    return conn
+
+def create_predictions_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS predictions (
+            id SERIAL PRIMARY KEY,
+            predicted_class INTEGER,
+            class_label VARCHAR(255)
+        )
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+
 # Route for predictions
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -62,6 +89,17 @@ def predict():
             'predicted_class': int(predicted_class[0]),
             'class_label': label_dict[str(predicted_class[0])]
         }
+
+        # Store a value in the database (for example, store the predicted class and class_label)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO predictions (predicted_class, class_label) VALUES (%s, %s)",
+            (int(predicted_class[0]), label_dict[str(predicted_class[0])])
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return jsonify(response), 200
     except Exception as e:
@@ -74,4 +112,5 @@ def status():
 
 # Run the app
 if __name__ == '__main__':
+    create_predictions_table()  # Ensure the table is created when the app starts
     app.run(host='0.0.0.0', port=5001)
