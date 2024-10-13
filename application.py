@@ -73,6 +73,29 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# New route: Get the last x records
+@app.route('/records/last/<int:x>', methods=['GET'])
+def get_last_x_records(x):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Fetch the last 'x' records ordered by timestamp
+        cursor.execute("SELECT * FROM predictions ORDER BY timestamp DESC LIMIT %s", (x,))
+        records = cursor.fetchall()
+
+        results = [
+            {'id': row[0], 'filename': row[1], 'timestamp': row[2], 'predicted_class': row[3]}
+            for row in records
+        ]
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(results), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 # Flask route for checking server status
 @app.route('/status', methods=['GET'])
 def status():
