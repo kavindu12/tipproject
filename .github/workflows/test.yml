@@ -1,82 +1,17 @@
-name: Run Tests on Commit
+name: Run Tests
 
-on:
-  push:
-    branches: [ main ]  # Runs on commits to the main branch
-  pull_request:
-    branches: [ main ]  # Runs on pull requests to the main branch
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      db:
-        image: postgres:13
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: mydatabase
-        ports:
-          - 5432:5432  # Expose PostgreSQL port
-        options: >- 
-          --health-cmd "pg_isready -U user" 
-          --health-interval 10s 
-          --health-timeout 5s 
-          --health-retries 5
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.9
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Wait for PostgreSQL to be ready
-      run: |
-        until pg_isready -h localhost -p 5432 -U user; do
-          echo "Waiting for PostgreSQL to be ready..."
-          sleep 2
-        done
-
-    - name: Set environment variables
-      run: |
-        echo "DB_HOST=localhost" >> $GITHUB_ENV
-        echo "DB_PORT=5432" >> $GITHUB_ENV
-        echo "POSTGRES_USER=user" >> $GITHUB_ENV
-        echo "POSTGRES_PASSWORD=password" >> $GITHUB_ENV
-        echo "POSTGRES_DB=mydatabase" >> $GITHUB_ENV
-
-    - name: Run migrations
-      run: |
-        python -c "
-from psycopg2 import connect
-conn = connect(host='localhost', port=5432, user='user', password='password', dbname='mydatabase')
-cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS predictions (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255),
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        predicted_class INTEGER
-    );
-''')
-conn.commit()
-cursor.close()
-conn.close()
-"
-
-    - name: Run tests
-      run: |
-        pytest tests/ --disable-warnings
-
-    - name: Report success
-      if: success()
-      run: echo "All tests passed! ✅"
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: pip install pytest requests
+      - name: Run tests
+        run: pytest tests/ --disable-warnings
